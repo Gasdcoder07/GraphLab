@@ -1,0 +1,36 @@
+:root {
+  color-scheme: dark;
+
+  --black: #000000;
+  --bg: #050505;
+  --bg-elevated: #0b0b0b;
+  --bg-panel: #0e0e0e;
+  --bg-inset: #060606;
+  --line: #2a2a2a;
+  --line-strong: #3d3d3d;
+  --text: #ececec;
+  --text-dim: #949494;
+  --text-faint: #626262;
+  --white: #ffffff;
+  --paper: #f2f2f2;
+
+  --font-display: 'Space Grotesk', 'Inter', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'SFMono-Regular', Consolas, monospace;
+
+  --radius: 3px;
+  --shadow-hard: 5px 5px 0 #000000;
+
+  --dots-white-6: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect x='0' y='0' width='1' height='1' fill='%23ffffff' fill-opacity='0.06'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23ffffff' fill-opacity='0.06'/%3E%3C/svg%3E");
+  --dots-white-12: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect x='0' y='0' width='1' height='1' fill='%23ffffff' fill-opacity='0.12'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23ffffff' fill-opacity='0.12'/%3E%3C/svg%3E");
+  --dots-white-20: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect x='0' y='0' width='1' height='1' fill='%23ffffff' fill-opacity='0.2'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23ffffff' fill-opacity='0.2'/%3E%3C/svg%3E");
+  --dots-black-24: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect x='0' y='0' width='1' height='1' fill='%23000000' fill-opacity='0.24'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23000000' fill-opacity='0.24'/%3E%3C/svg%3E");
+  --dots-black-40: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='4' height='4'%3E%3Crect x='0' y='0' width='1' height='1' fill='%23000000' fill-opacity='0.4'/%3E%3Crect x='2' y='2' width='1' height='1' fill='%23000000' fill-opacity='0.4'/%3E%3C/svg%3E");
+
+  --scanlines: repeating-linear-gradient(
+    0deg,
+    rgba(255, 255, 255, 0.018) 0,
+    rgba(255, 255, 255, 0.018) 1px,
+    transparent 1px,
+    transparent 4px
+  );
+}

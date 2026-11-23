@@ -1,0 +1,1337 @@
+<!DOCTYPE html>
+<html lang="es" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Laboratorio Interactivo de Teoría de Grafos</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;600&display=swap" rel="stylesheet" />
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Inter', 'sans-serif'],
+            mono: ['JetBrains Mono', 'monospace'],
+          },
+        },
+      },
+    };
+  </script>
+  <style>
+    /* Personalización de barras de desplazamiento y canvas */
+    ::-webkit-scrollbar { width: 6px; height: 6px; }
+    ::-webkit-scrollbar-track { background: #0f172a; }
+    ::-webkit-scrollbar-thumb { background: #334155; border-radius: 9999px; }
+    ::-webkit-scrollbar-thumb:hover { background: #475569; }
+    canvas { touch-action: none; }
+    .matrix-cell { transition: background-color 0.15s ease, color 0.15s ease; }
+  </style>
+</head>
+<body class="bg-slate-950 text-slate-100 font-sans min-h-screen flex flex-col selection:bg-indigo-500 selection:text-white">
+
+  <!-- Barra Superior -->
+  <header class="bg-slate-900/90 backdrop-blur border-b border-slate-800 px-4 py-3 flex flex-wrap items-center justify-between gap-3 sticky top-0 z-20">
+    <div class="flex items-center gap-3">
+      <div class="w-9 h-9 rounded-xl bg-gradient-to-br from-indigo-500 to-cyan-500 flex items-center justify-center shadow-lg shadow-indigo-500/20">
+        <svg class="w-5 h-5 text-white" fill="none" stroke="currentColor" stroke-width="2.2" viewBox="0 0 24 24">
+          <circle cx="5" cy="6" r="2.5" /><circle cx="19" cy="6" r="2.5" /><circle cx="12" cy="18" r="2.5" />
+          <path d="M7.2 7.2l3.5 8.5M16.8 7.2l-3.5 8.5M7.5 6h9" />
+        </svg>
+      </div>
+      <div>
+        <h1 class="text-base sm:text-lg font-bold tracking-tight text-white leading-tight">Laboratorio de Teoría de Grafos</h1>
+        <p class="text-xs text-slate-400">Matemáticas Discretas · Análisis Estructural y Matricial en Tiempo Real</p>
+      </div>
+    </div>
+
+    <!-- Controles rápidos globales -->
+    <div class="flex flex-wrap items-center gap-2">
+      <button id="btn-complement" class="px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 hover:bg-slate-700 border border-slate-700 text-cyan-300 flex items-center gap-1.5 transition" title="Alternar entre el grafo G y su complemento Ḡ">
+        <svg class="w-4 h-4" fill="none" stroke="currentColor" stroke-width="2" viewBox="0 0 24 24"><path d="M8 7h12m0 0l-4-4m4 4l-4 4m0 6H4m0 0l4 4m-4-4l4-4"/></svg>
+        <span id="lbl-complement">Ver Complemento (G&#772;)</span>
+      </button>
+      <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 cursor-pointer select-none">
+        <input type="checkbox" id="chk-directed" class="rounded text-indigo-500 focus:ring-0 bg-slate-900 border-slate-600" />
+        <span>Dirigido (Digrafo)</span>
+      </label>
+      <label class="flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-xs font-medium bg-slate-800 border border-slate-700 cursor-pointer select-none">
+        <input type="checkbox" id="chk-degrees" checked class="rounded text-indigo-500 focus:ring-0 bg-slate-900 border-slate-600" />
+        <span>Mostrar Valencia deg(v)</span>
+      </label>
+    </div>
+  </header>
+
+  <!-- Contenedor Principal Responsivo -->
+  <main class="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-4 p-4 max-w-[1600px] w-full mx-auto">
+
+    <!-- COLUMNA IZQUIERDA: Selector de Familias de Grafos (Presets) -->
+    <aside class="lg:col-span-3 flex flex-col gap-4">
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">1. Familias y Tipos de Grafos</h2>
+        <div id="preset-list" class="grid grid-cols-2 lg:grid-cols-1 gap-2">
+          <!-- Botones generados por JS -->
+        </div>
+
+        <!-- Controles dinámicos para K_n y K_{m,n} -->
+        <div id="param-controls" class="mt-4 pt-3 border-t border-slate-800 hidden space-y-3">
+          <div id="ctrl-kn" class="hidden">
+            <div class="flex justify-between text-xs mb-1">
+              <span class="text-slate-300 font-medium">Orden $n$ para $K_n$:</span>
+              <span id="val-kn" class="font-mono font-bold text-indigo-400">5</span>
+            </div>
+            <input type="range" id="slider-kn" min="3" max="7" value="5" class="w-full accent-indigo-500 cursor-pointer" />
+          </div>
+          <div id="ctrl-kmn" class="hidden space-y-2">
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-indigo-300 font-medium">Partición |V₁| = m:</span>
+                <span id="val-km" class="font-mono font-bold text-indigo-400">3</span>
+              </div>
+              <input type="range" id="slider-km" min="1" max="5" value="3" class="w-full accent-indigo-500 cursor-pointer" />
+            </div>
+            <div>
+              <div class="flex justify-between text-xs mb-1">
+                <span class="text-emerald-300 font-medium">Partición |V₂| = n:</span>
+                <span id="val-kn2" class="font-mono font-bold text-emerald-400">3</span>
+              </div>
+              <input type="range" id="slider-kn2" min="1" max="5" value="3" class="w-full accent-emerald-500 cursor-pointer" />
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Tarjeta Educativa Formal -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex-1">
+        <div class="flex items-center gap-2 mb-2">
+          <span class="px-2 py-0.5 text-[11px] font-semibold rounded-md bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">Definición Formal</span>
+        </div>
+        <h3 id="edu-title" class="text-base font-bold text-white mb-1.5">Grafo Simple No Dirigido</h3>
+        <p id="edu-desc" class="text-xs text-slate-300 leading-relaxed mb-3">
+          Estructura G = (V, E) sin bucles ni aristas múltiples entre el mismo par de vértices.
+        </p>
+        <div id="edu-formula" class="bg-slate-950/80 border border-slate-800 rounded-xl p-2.5 font-mono text-xs text-cyan-300 leading-relaxed">
+          |V| = n, |E| ≤ n(n - 1) / 2
+        </div>
+      </div>
+    </aside>
+
+    <!-- COLUMNA CENTRAL: Lienzo Interactivo -->
+    <section class="lg:col-span-5 flex flex-col gap-3">
+      <!-- Barra de Herramientas de Edición -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-2.5 flex flex-wrap items-center justify-between gap-2 shadow-xl">
+        <div class="flex flex-wrap items-center gap-1.5" role="group">
+          <button data-mode="move" class="tool-btn active px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 bg-indigo-600 text-white shadow">
+            <span>✋ Mover / Explorar</span>
+          </button>
+          <button data-mode="addNode" class="tool-btn px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700">
+            <span>➕ Vértice</span>
+          </button>
+          <button data-mode="addEdge" class="tool-btn px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 bg-slate-800 text-slate-300 hover:bg-slate-700">
+            <span>🔗 Arista</span>
+          </button>
+          <button data-mode="delete" class="tool-btn px-3 py-1.5 rounded-xl text-xs font-medium flex items-center gap-1.5 bg-slate-800 text-slate-300 hover:bg-rose-900/60 hover:text-rose-200">
+            <span>🗑️ Eliminar</span>
+          </button>
+        </div>
+        <button id="btn-clear" class="px-2.5 py-1.5 rounded-xl text-xs font-medium bg-slate-800 hover:bg-slate-700 text-slate-300 border border-slate-700">
+          Limpiar
+        </button>
+      </div>
+
+      <!-- Contenedor del Canvas -->
+      <div class="relative flex-1 min-h-[380px] sm:min-h-[460px] bg-slate-900 border border-slate-800 rounded-2xl overflow-hidden shadow-2xl flex flex-col">
+        <!-- Mensaje contextual superior -->
+        <div id="canvas-hint" class="absolute top-3 left-3 right-3 z-10 pointer-events-none flex justify-between items-center gap-2">
+          <span class="bg-slate-950/85 backdrop-blur border border-slate-800 text-slate-300 text-[11px] px-3 py-1.5 rounded-xl shadow">
+            💡 Arrastra los nodos o pasa el cursor encima para inspeccionar vecindad.
+          </span>
+          <span id="badge-complement" class="hidden bg-cyan-500/20 border border-cyan-500/40 text-cyan-300 text-[11px] font-semibold px-2.5 py-1 rounded-xl">
+            Mostrando G&#772;
+          </span>
+        </div>
+
+        <canvas id="graph-canvas" class="w-full h-full flex-1 cursor-grab active:cursor-grabbing"></canvas>
+
+        <!-- Leyenda inferior -->
+        <div id="canvas-legend" class="bg-slate-950/90 border-t border-slate-800 px-3 py-2 flex flex-wrap items-center justify-between gap-2 text-[11px] text-slate-400">
+          <div class="flex flex-wrap items-center gap-3">
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-indigo-500 inline-block"></span> Grado Par / Partición V₁</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-amber-500 inline-block"></span> Grado Impar (Euler)</span>
+            <span class="flex items-center gap-1.5"><span class="w-2.5 h-2.5 rounded-full bg-emerald-500 inline-block"></span> Partición V₂ (Bipartido)</span>
+          </div>
+          <span id="hover-status" class="font-mono text-slate-300">Nodo: ninguno</span>
+        </div>
+      </div>
+    </section>
+
+    <!-- COLUMNA DERECHA: Análisis Matemático y Matrices en Tiempo Real -->
+    <aside class="lg:col-span-4 flex flex-col gap-4">
+
+      <!-- Métricas y Propiedades Detectadas -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl">
+        <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400 mb-3">2. Análisis Estructural en Tiempo Real</h2>
+
+        <!-- Orden, Tamaño y Lema del Apretón de Manos -->
+        <div class="grid grid-cols-3 gap-2 mb-3">
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-center">
+            <div class="text-[11px] text-slate-400">Orden |V|</div>
+            <div id="stat-v" class="text-lg font-bold font-mono text-white">0</div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-center">
+            <div class="text-[11px] text-slate-400">Tamaño |E|</div>
+            <div id="stat-e" class="text-lg font-bold font-mono text-cyan-400">0</div>
+          </div>
+          <div class="bg-slate-950 border border-slate-800 rounded-xl p-2.5 text-center">
+            <div class="text-[11px] text-slate-400">∑ deg(v)</div>
+            <div id="stat-degsum" class="text-lg font-bold font-mono text-indigo-400">0</div>
+          </div>
+        </div>
+
+        <!-- Verificación del Teorema del Apretón de Manos -->
+        <div class="bg-slate-950/70 border border-slate-800 rounded-xl p-2.5 mb-3 flex items-center justify-between text-xs">
+          <span class="text-slate-400">Apretón de Manos (∑deg = 2|E|):</span>
+          <span id="stat-handshake" class="font-mono font-semibold text-emerald-400">0 = 2(0) ✔</span>
+        </div>
+
+        <!-- Insignias de Clasificación Automática -->
+        <div class="grid grid-cols-2 gap-2 text-xs" id="prop-badges">
+          <!-- Rellenado dinámicamente -->
+        </div>
+      </div>
+
+      <!-- Representación Matricial Dinámica -->
+      <div class="bg-slate-900 border border-slate-800 rounded-2xl p-4 shadow-xl flex-1 flex flex-col">
+        <div class="flex items-center justify-between mb-3">
+          <h2 class="text-xs font-semibold uppercase tracking-wider text-slate-400">3. Representación Matricial</h2>
+          <div class="flex bg-slate-950 p-1 rounded-xl border border-slate-800">
+            <button id="tab-adj" class="matrix-tab px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-600 text-white">Adyacencia (A)</button>
+            <button id="tab-inc" class="matrix-tab px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-white">Incidencia (M)</button>
+          </div>
+        </div>
+
+        <p id="matrix-caption" class="text-[11px] text-slate-400 mb-2">
+          Matriz cuadrada n × n donde aᵢⱼ indica el número de aristas entre vᵢ y vⱼ.
+        </p>
+
+        <div id="matrix-container" class="flex-1 overflow-auto bg-slate-950 border border-slate-800 rounded-xl p-3 flex items-center justify-center min-h-[190px]">
+          <!-- Tabla matricial generada por JS -->
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <script>
+    /**
+     * LABORATORIO INTERACTIVO DE TEORÍA DE GRAFOS
+     * Implementa renderizado en Canvas, edición interactiva, detección automática de propiedades
+     * matemáticas (conexidad, bipartición, Euler, completo, simple) y generación de matrices A y M.
+     */
+
+    // =========================================================================
+    // 1. ESTADO GLOBAL DE LA APLICACIÓN
+    // =========================================================================
+    const state = {
+      nodes: [], // { id: number, label: string, x: number, y: number, partition?: 1 | 2 }
+      edges: [], // { id: number, u: number, v: number }
+      directed: false,
+      showDegrees: true,
+      isComplementView: false,
+      originalSnapshot: null, // Guarda G antes de ver su complemento
+      mode: 'move', // 'move' | 'addNode' | 'addEdge' | 'delete'
+      activePreset: 'simple',
+      kn: 5,
+      km: 3,
+      kn2: 3,
+      matrixTab: 'adj', // 'adj' | 'inc'
+      // Interacción en Canvas
+      draggingNode: null,
+      hoveredNode: null,
+      selectedNodeForEdge: null,
+      pointerPos: { x: 0, y: 0 },
+      nextNodeId: 1,
+      nextEdgeId: 1,
+    };
+
+    // =========================================================================
+    // 2. DEFINICIONES EDUCATIVAS Y PRESETS
+    // =========================================================================
+    const PRESETS = [
+      {
+        id: 'simple',
+        name: 'Grafo Simple',
+        badge: 'G = (V, E)',
+        title: 'Grafo Simple No Dirigido',
+        desc: 'No contiene bucles (aristas de un vértice a sí mismo) ni aristas múltiples entre el mismo par de vértices. Modela redes de comunicación estándar.',
+        formula: '|E| ≤ n(n - 1) / 2   |   A es simétrica con diagonal de ceros',
+      },
+      {
+        id: 'multigraph',
+        name: 'Multigrafo',
+        badge: 'Bucles + Paralelas',
+        title: 'Multigrafo (con Bucles y Aristas Paralelas)',
+        desc: 'Permite múltiples aristas conectando el mismo par de vértices (aristas paralelas) y bucles. En grafos no dirigidos, cada bucle suma 2 al grado del vértice.',
+        formula: 'deg(v) = aristas incidentes + 2 × (bucles en v)',
+      },
+      {
+        id: 'digraph',
+        name: 'Grafo Dirigido (Digrafo)',
+        badge: 'Pares (u, v)',
+        title: 'Grafo Dirigido (Digrafo)',
+        desc: 'Las aristas son pares ordenados (u, v) con dirección desde el origen u hacia el destino v. El grado se divide en grado de entrada deg⁻(v) y salida deg⁺(v).',
+        formula: '∑ deg⁻(v) = ∑ deg⁺(v) = |E|',
+      },
+      {
+        id: 'complete',
+        name: 'Grafo Completo (Kₙ)',
+        badge: '(n-1)-regular',
+        title: 'Grafo Completo de n Vértices (Kₙ)',
+        desc: 'Grafo simple donde cada par de vértices distintos está conectado por una única arista. Representa una topología de malla completa (Full Mesh).',
+        formula: 'deg(v) = n - 1   |   |E(Kₙ)| = n(n - 1) / 2',
+      },
+      {
+        id: 'bipartite',
+        name: 'Bipartido y Kₘ,ₙ',
+        badge: 'V₁ ∪ V₂',
+        title: 'Grafo Bipartido Completo (Kₘ,ₙ)',
+        desc: 'Sus vértices se dividen en dos conjuntos disjuntos V₁ y V₂ sin aristas internas. Un grafo es bipartido si y sólo si no contiene ciclos de longitud impar.',
+        formula: '|V| = m + n   |   |E| = m · n   |   Sin ciclos impares',
+      },
+      {
+        id: 'disconnected',
+        name: 'Conexo vs. Disconexo',
+        badge: 'Componentes',
+        title: 'Grafo Disconexo (Múltiples Componentes)',
+        desc: 'Un grafo es disconexo si existen pares de vértices sin ningún camino entre ellos. Se descompone en subgrafos conexos maximales llamados componentes conexas.',
+        formula: 'Componentes conexas ≥ 2  ⇒  No admite trayectoria de Euler global',
+      },
+      {
+        id: 'euler_circuit',
+        name: 'Circuito de Euler',
+        badge: 'Todos pares',
+        title: 'Grafo Euleriano (Circuito de Euler)',
+        desc: 'Grafo conexo que admite un recorrido cerrado que pasa por todas las aristas exactamente una vez. Ocurre si y sólo si todos los vértices tienen grado par.',
+        formula: 'Conexo ∧ ∀v ∈ V, deg(v) es PAR  ⇔  Existe Circuito de Euler',
+      },
+      {
+        id: 'euler_path',
+        name: 'Camino de Euler',
+        badge: '2 impares',
+        title: 'Camino de Euler Abierto (El Sobre)',
+        desc: 'Recorre todas las aristas exactamente una vez empezando y terminando en vértices distintos. Existe si y sólo si es conexo y tiene exactamente 2 vértices de grado impar.',
+        formula: 'Conexo ∧ exactamente 2 vértices con deg(v) IMPAR',
+      },
+    ];
+
+    // =========================================================================
+    // 3. REFERENCIAS DOM
+    // =========================================================================
+    const canvas = document.getElementById('graph-canvas');
+    const ctx = canvas.getContext('2d');
+    const presetListEl = document.getElementById('preset-list');
+    const chkDirected = document.getElementById('chk-directed');
+    const chkDegrees = document.getElementById('chk-degrees');
+    const btnComplement = document.getElementById('btn-complement');
+    const lblComplement = document.getElementById('lbl-complement');
+    const badgeComplement = document.getElementById('badge-complement');
+
+    // =========================================================================
+    // 4. GENERACIÓN DE PRESETS Y GEOMETRÍA
+    // =========================================================================
+    function getCanvasCenter() {
+      const rect = canvas.getBoundingClientRect();
+      return { cx: rect.width / 2, cy: rect.height / 2, w: rect.width, h: rect.height };
+    }
+
+    function resetGraphBase(directed = false) {
+      state.nodes = [];
+      state.edges = [];
+      state.nextNodeId = 1;
+      state.nextEdgeId = 1;
+      state.directed = directed;
+      chkDirected.checked = directed;
+      state.isComplementView = false;
+      state.originalSnapshot = null;
+      updateComplementUI();
+    }
+
+    function addNode(x, y, partition = null) {
+      const id = state.nextNodeId++;
+      state.nodes.push({ id, label: `v${id}`, x, y, partition });
+      return id;
+    }
+
+    function addEdge(u, v) {
+      const id = state.nextEdgeId++;
+      state.edges.push({ id, u, v });
+      return id;
+    }
+
+    function loadPreset(presetId) {
+      state.activePreset = presetId;
+      state.selectedNodeForEdge = null;
+      const { cx, cy, w, h } = getCanvasCenter();
+      const R = Math.min(w, h) * 0.31;
+
+      // Mostrar/ocultar controles deslizantes
+      const paramControls = document.getElementById('param-controls');
+      const ctrlKn = document.getElementById('ctrl-kn');
+      const ctrlKmn = document.getElementById('ctrl-kmn');
+      paramControls.classList.add('hidden');
+      ctrlKn.classList.add('hidden');
+      ctrlKmn.classList.add('hidden');
+
+      if (presetId === 'simple') {
+        resetGraphBase(false);
+        const coords = [
+          [cx - R * 0.8, cy - R * 0.6],
+          [cx + R * 0.8, cy - R * 0.6],
+          [cx + R * 0.9, cy + R * 0.6],
+          [cx - R * 0.9, cy + R * 0.6],
+          [cx, cy],
+        ];
+        coords.forEach(([x, y]) => addNode(x, y));
+        [[1, 2], [2, 3], [3, 4], [4, 1], [1, 5], [2, 5], [3, 5]].forEach(([u, v]) => addEdge(u, v));
+      } else if (presetId === 'multigraph') {
+        resetGraphBase(false);
+        const coords = [
+          [cx - R * 0.75, cy - R * 0.45],
+          [cx + R * 0.75, cy - R * 0.45],
+          [cx + R * 0.65, cy + R * 0.65],
+          [cx - R * 0.65, cy + R * 0.65],
+        ];
+        coords.forEach(([x, y]) => addNode(x, y));
+        // Aristas normales, paralelas y bucles
+        addEdge(1, 2);
+        addEdge(1, 2); // Paralela
+        addEdge(2, 3);
+        addEdge(3, 4);
+        addEdge(3, 4); // Paralela
+        addEdge(4, 1);
+        addEdge(1, 1); // Bucle
+        addEdge(3, 3); // Bucle
+      } else if (presetId === 'digraph') {
+        resetGraphBase(true);
+        const n = 5;
+        for (let i = 0; i < n; i++) {
+          const ang = -Math.PI / 2 + (2 * Math.PI * i) / n;
+          addNode(cx + R * Math.cos(ang), cy + R * Math.sin(ang));
+        }
+        [[1, 2], [2, 3], [3, 4], [4, 5], [5, 1], [1, 3], [4, 2]].forEach(([u, v]) => addEdge(u, v));
+      } else if (presetId === 'complete') {
+        paramControls.classList.remove('hidden');
+        ctrlKn.classList.remove('hidden');
+        resetGraphBase(false);
+        const n = state.kn;
+        for (let i = 0; i < n; i++) {
+          const ang = -Math.PI / 2 + (2 * Math.PI * i) / n;
+          addNode(cx + R * Math.cos(ang), cy + R * Math.sin(ang));
+        }
+        for (let i = 1; i <= n; i++) {
+          for (let j = i + 1; j <= n; j++) {
+            addEdge(i, j);
+          }
+        }
+      } else if (presetId === 'bipartite') {
+        paramControls.classList.remove('hidden');
+        ctrlKmn.classList.remove('hidden');
+        resetGraphBase(false);
+        const m = state.km;
+        const n = state.kn2;
+        const leftX = cx - R * 0.85;
+        const rightX = cx + R * 0.85;
+        const v1Ids = [];
+        const v2Ids = [];
+
+        for (let i = 0; i < m; i++) {
+          const y = cy + (i - (m - 1) / 2) * Math.min(68, (h * 0.65) / Math.max(m, 1));
+          v1Ids.push(addNode(leftX, y, 1));
+        }
+        for (let j = 0; j < n; j++) {
+          const y = cy + (j - (n - 1) / 2) * Math.min(68, (h * 0.65) / Math.max(n, 1));
+          v2Ids.push(addNode(rightX, y, 2));
+        }
+        v1Ids.forEach((u) => v2Ids.forEach((v) => addEdge(u, v)));
+      } else if (presetId === 'disconnected') {
+        resetGraphBase(false);
+        // Componente 1 (Triángulo)
+        addNode(cx - R * 0.85, cy - R * 0.5);
+        addNode(cx - R * 0.35, cy + R * 0.45);
+        addNode(cx - R * 1.15, cy + R * 0.45);
+        addEdge(1, 2); addEdge(2, 3); addEdge(3, 1);
+
+        // Componente 2 (Arista)
+        addNode(cx + R * 0.45, cy - R * 0.55);
+        addNode(cx + R * 1.05, cy - R * 0.15);
+        addEdge(4, 5);
+
+        // Componente 3 (Vértice aislado)
+        addNode(cx + R * 0.65, cy + R * 0.65);
+      } else if (presetId === 'euler_circuit') {
+        resetGraphBase(false);
+        // Octaedro / Estrella con todos los grados pares (4 y 2)
+        addNode(cx, cy - R * 0.95); // v1 (deg 4)
+        addNode(cx + R * 0.95, cy); // v2 (deg 4)
+        addNode(cx, cy + R * 0.95); // v3 (deg 4)
+        addNode(cx - R * 0.95, cy); // v4 (deg 4)
+        addNode(cx, cy); // v5 (deg 4)
+        [
+          [1, 2], [2, 3], [3, 4], [4, 1],
+          [1, 5], [2, 5], [3, 5], [4, 5],
+        ].forEach(([u, v]) => addEdge(u, v));
+      } else if (presetId === 'euler_path') {
+        resetGraphBase(false);
+        // Clásico sobre abierto: 2 vértices de grado 3 (abajo) y 3 vértices de grado par
+        addNode(cx, cy - R * 0.95); // v1 techo (deg 2)
+        addNode(cx - R * 0.75, cy - R * 0.25); // v2 sup-izq (deg 4)
+        addNode(cx + R * 0.75, cy - R * 0.25); // v3 sup-der (deg 4)
+        addNode(cx - R * 0.75, cy + R * 0.8); // v4 inf-izq (deg 3 - IMPAR)
+        addNode(cx + R * 0.75, cy + R * 0.8); // v5 inf-der (deg 3 - IMPAR)
+        [
+          [1, 2], [1, 3],
+          [2, 3], [2, 4], [3, 5],
+          [4, 5], [2, 5], [3, 4],
+        ].forEach(([u, v]) => addEdge(u, v));
+      }
+
+      updateEducationalCard(presetId);
+      renderPresetButtons();
+      analyzeAndRenderAll();
+    }
+
+    // =========================================================================
+    // 5. ALTERNAR GRAFO COMPLEMENTO (G vs Ḡ)
+    // =========================================================================
+    function toggleComplement() {
+      if (state.nodes.length === 0) return;
+
+      if (!state.isComplementView) {
+        // Guardar copia exacta de G
+        state.originalSnapshot = {
+          edges: state.edges.map((e) => ({ ...e })),
+          directed: state.directed,
+        };
+        state.directed = false;
+        chkDirected.checked = false;
+
+        // Construir E_complemento para grafo simple
+        const newEdges = [];
+        let edgeId = 1;
+        for (let i = 0; i < state.nodes.length; i++) {
+          for (let j = i + 1; j < state.nodes.length; j++) {
+            const u = state.nodes[i].id;
+            const v = state.nodes[j].id;
+            const exists = state.originalSnapshot.edges.some(
+              (e) => (e.u === u && e.v === v) || (e.u === v && e.v === u)
+            );
+            if (!exists) {
+              newEdges.push({ id: edgeId++, u, v });
+            }
+          }
+        }
+        state.edges = newEdges;
+        state.nextEdgeId = edgeId;
+        state.isComplementView = true;
+      } else {
+        // Restaurar G original
+        if (state.originalSnapshot) {
+          state.edges = state.originalSnapshot.edges;
+          state.directed = state.originalSnapshot.directed;
+          chkDirected.checked = state.directed;
+          state.nextEdgeId = state.edges.reduce((max, e) => Math.max(max, e.id), 0) + 1;
+        }
+        state.isComplementView = false;
+      }
+      updateComplementUI();
+      analyzeAndRenderAll();
+    }
+
+    function updateComplementUI() {
+      if (state.isComplementView) {
+        lblComplement.textContent = 'Volver a Grafo Original (G)';
+        btnComplement.classList.add('bg-cyan-950', 'border-cyan-500');
+        badgeComplement.classList.remove('hidden');
+      } else {
+        lblComplement.textContent = 'Ver Complemento (Ḡ)';
+        btnComplement.classList.remove('bg-cyan-950', 'border-cyan-500');
+        badgeComplement.classList.add('hidden');
+      }
+    }
+
+    // =========================================================================
+    // 6. MOTOR DE ANÁLISIS MATEMÁTICO EN TIEMPO REAL
+    // =========================================================================
+    function analyzeGraph() {
+      const n = state.nodes.length;
+      const m = state.edges.length;
+      const idToIndex = new Map();
+      state.nodes.forEach((node, idx) => idToIndex.set(node.id, idx));
+
+      // Grados
+      const deg = new Array(n).fill(0);
+      const inDeg = new Array(n).fill(0);
+      const outDeg = new Array(n).fill(0);
+
+      let hasLoops = false;
+      let hasParallel = false;
+      const pairCounts = new Map();
+
+      state.edges.forEach((e) => {
+        const ui = idToIndex.get(e.u);
+        const vi = idToIndex.get(e.v);
+        if (ui === undefined || vi === undefined) return;
+
+        if (ui === vi) {
+          hasLoops = true;
+          deg[ui] += 2;
+          inDeg[ui] += 1;
+          outDeg[ui] += 1;
+        } else {
+          deg[ui] += 1;
+          deg[vi] += 1;
+          outDeg[ui] += 1;
+          inDeg[vi] += 1;
+        }
+
+        const key = state.directed
+          ? `${ui}->${vi}`
+          : `${Math.min(ui, vi)}-${Math.max(ui, vi)}`;
+        const count = (pairCounts.get(key) || 0) + 1;
+        pairCounts.set(key, count);
+        if (count > 1) hasParallel = true;
+      });
+
+      const isSimple = !hasLoops && !hasParallel;
+
+      // Lista de adyacencia no dirigida subyacente (para conexidad y bipartición)
+      const adj = Array.from({ length: n }, () => []);
+      state.edges.forEach((e) => {
+        const ui = idToIndex.get(e.u);
+        const vi = idToIndex.get(e.v);
+        if (ui !== undefined && vi !== undefined && ui !== vi) {
+          adj[ui].push(vi);
+          adj[vi].push(ui);
+        }
+      });
+
+      // Componentes conexas (BFS)
+      const visited = new Array(n).fill(false);
+      let components = 0;
+      for (let i = 0; i < n; i++) {
+        if (!visited[i]) {
+          components++;
+          const q = [i];
+          visited[i] = true;
+          while (q.length) {
+            const curr = q.shift();
+            for (const nxt of adj[curr]) {
+              if (!visited[nxt]) {
+                visited[nxt] = true;
+                q.push(nxt);
+              }
+            }
+          }
+        }
+      }
+      const isConnected = n > 0 && components === 1;
+
+      // Verificación Bipartido (2-coloreado BFS)
+      let isBipartite = !hasLoops && n >= 2;
+      const colors = new Array(n).fill(0);
+      if (isBipartite) {
+        for (let i = 0; i < n; i++) {
+          if (colors[i] === 0) {
+            colors[i] = 1;
+            const q = [i];
+            while (q.length) {
+              const curr = q.shift();
+              for (const nxt of adj[curr]) {
+                if (colors[nxt] === 0) {
+                  colors[nxt] = colors[curr] === 1 ? 2 : 1;
+                  q.push(nxt);
+                } else if (colors[nxt] === colors[curr]) {
+                  isBipartite = false;
+                }
+              }
+            }
+          }
+        }
+      }
+
+      // Grafo Completo K_n
+      const isComplete = !state.directed && isSimple && n >= 1 && m === (n * (n - 1)) / 2;
+
+      // Teorema de Euler (para grafos no dirigidos sin vértices aislados o conexos)
+      const nonIsolatedIndices = [];
+      for (let i = 0; i < n; i++) {
+        if (deg[i] > 0) nonIsolatedIndices.push(i);
+      }
+      // Verificar conexidad entre vértices con grado > 0
+      let nonIsolatedConnected = nonIsolatedIndices.length > 0;
+      if (nonIsolatedConnected) {
+        const visE = new Set([nonIsolatedIndices[0]]);
+        const q = [nonIsolatedIndices[0]];
+        while (q.length) {
+          const curr = q.shift();
+          for (const nxt of adj[curr]) {
+            if (!visE.has(nxt)) {
+              visE.add(nxt);
+              q.push(nxt);
+            }
+          }
+        }
+        nonIsolatedConnected = nonIsolatedIndices.every((idx) => visE.has(idx));
+      }
+
+      const oddDegreeCount = deg.filter((d) => d % 2 !== 0).length;
+      let eulerStatus = 'No Euleriano';
+      if (!state.directed && m > 0 && nonIsolatedConnected) {
+        if (oddDegreeCount === 0) eulerStatus = 'Circuito de Euler';
+        else if (oddDegreeCount === 2) eulerStatus = 'Camino de Euler';
+      }
+
+      const degSum = deg.reduce((acc, v) => acc + v, 0);
+
+      return {
+        n,
+        m,
+        idToIndex,
+        deg,
+        inDeg,
+        outDeg,
+        degSum,
+        isSimple,
+        hasLoops,
+        hasParallel,
+        components,
+        isConnected,
+        isBipartite,
+        bipartiteColors: colors,
+        isComplete,
+        oddDegreeCount,
+        eulerStatus,
+      };
+    }
+
+    // =========================================================================
+    // 7. RENDERIZADO EN CANVAS HTML5
+    // =========================================================================
+    function resizeCanvas() {
+      const parent = canvas.parentElement;
+      const dpr = window.devicePixelRatio || 1;
+      const rect = parent.getBoundingClientRect();
+      // Restar altura de la leyenda inferior (~34px)
+      const height = Math.max(320, rect.height - 34);
+      canvas.width = rect.width * dpr;
+      canvas.height = height * dpr;
+      canvas.style.width = `${rect.width}px`;
+      canvas.style.height = `${height}px`;
+      ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
+      drawGraph();
+    }
+
+    function drawGraph(analysis = analyzeGraph()) {
+      const width = canvas.width / (window.devicePixelRatio || 1);
+      const height = canvas.height / (window.devicePixelRatio || 1);
+      ctx.clearRect(0, 0, width, height);
+
+      // Cuadrícula sutil de laboratorio
+      ctx.strokeStyle = 'rgba(30, 41, 59, 0.45)';
+      ctx.lineWidth = 1;
+      const gridSize = 28;
+      for (let x = 0; x < width; x += gridSize) {
+        ctx.beginPath(); ctx.moveTo(x, 0); ctx.lineTo(x, height); ctx.stroke();
+      }
+      for (let y = 0; y < height; y += gridSize) {
+        ctx.beginPath(); ctx.moveTo(0, y); ctx.lineTo(width, y); ctx.stroke();
+      }
+
+      // Agrupar aristas entre mismos pares para curvar las paralelas
+      const pairGroups = new Map();
+      state.edges.forEach((edge) => {
+        const key = edge.u === edge.v
+          ? `loop-${edge.u}`
+          : `${Math.min(edge.u, edge.v)}-${Math.max(edge.u, edge.v)}`;
+        if (!pairGroups.has(key)) pairGroups.set(key, []);
+        pairGroups.get(key).push(edge);
+      });
+
+      // Línea guía al crear arista en modo addEdge
+      if (state.mode === 'addEdge' && state.selectedNodeForEdge) {
+        const src = state.nodes.find((n) => n.id === state.selectedNodeForEdge);
+        if (src) {
+          ctx.save();
+          ctx.setLineDash([6, 6]);
+          ctx.strokeStyle = '#38bdf8';
+          ctx.lineWidth = 2;
+          ctx.beginPath();
+          ctx.moveTo(src.x, src.y);
+          ctx.lineTo(state.pointerPos.x, state.pointerPos.y);
+          ctx.stroke();
+          ctx.restore();
+        }
+      }
+
+      // Dibujar Aristas
+      pairGroups.forEach((group) => {
+        group.forEach((edge, idx) => {
+          const uNode = state.nodes.find((n) => n.id === edge.u);
+          const vNode = state.nodes.find((n) => n.id === edge.v);
+          if (!uNode || !vNode) return;
+
+          const isHighlighted =
+            state.hoveredNode &&
+            (state.hoveredNode.id === uNode.id || state.hoveredNode.id === vNode.id);
+
+          ctx.strokeStyle = isHighlighted
+            ? '#38bdf8'
+            : state.isComplementView
+            ? 'rgba(34, 211, 238, 0.55)'
+            : 'rgba(148, 163, 184, 0.65)';
+          ctx.lineWidth = isHighlighted ? 3 : 2;
+
+          if (uNode.id === vNode.id) {
+            // Bucle (Loop)
+            const loopRadius = 18 + idx * 7;
+            const offsetY = -24 - idx * 5;
+            ctx.beginPath();
+            ctx.arc(uNode.x, uNode.y + offsetY, loopRadius, 0, Math.PI * 2);
+            ctx.stroke();
+
+            if (state.directed) {
+              drawArrowHead(uNode.x + loopRadius - 2, uNode.y + offsetY, Math.PI / 2, ctx.strokeStyle);
+            }
+          } else {
+            // Arista recta o curva (si hay paralelas)
+            const total = group.length;
+            const curveOffset = total === 1 ? 0 : (idx - (total - 1) / 2) * 34;
+            const midX = (uNode.x + vNode.x) / 2;
+            const midY = (uNode.y + vNode.y) / 2;
+            const dx = vNode.x - uNode.x;
+            const dy = vNode.y - uNode.y;
+            const len = Math.hypot(dx, dy) || 1;
+            const nx = -dy / len;
+            const ny = dx / len;
+            const ctrlX = midX + nx * curveOffset;
+            const ctrlY = midY + ny * curveOffset;
+
+            ctx.beginPath();
+            ctx.moveTo(uNode.x, uNode.y);
+            if (curveOffset === 0) {
+              ctx.lineTo(vNode.x, vNode.y);
+            } else {
+              ctx.quadraticCurveTo(ctrlX, ctrlY, vNode.x, vNode.y);
+            }
+            ctx.stroke();
+
+            // Flecha para grafo dirigido
+            if (state.directed) {
+              const nodeRadius = 21;
+              const angle = curveOffset === 0
+                ? Math.atan2(vNode.y - uNode.y, vNode.x - uNode.x)
+                : Math.atan2(vNode.y - ctrlY, vNode.x - ctrlX);
+              const tipX = vNode.x - nodeRadius * Math.cos(angle);
+              const tipY = vNode.y - nodeRadius * Math.sin(angle);
+              drawArrowHead(tipX, tipY, angle, ctx.strokeStyle);
+            }
+          }
+        });
+      });
+
+      // Determinar vecinos del nodo bajo el cursor
+      const neighborIds = new Set();
+      if (state.hoveredNode) {
+        state.edges.forEach((e) => {
+          if (e.u === state.hoveredNode.id) neighborIds.add(e.v);
+          if (e.v === state.hoveredNode.id) neighborIds.add(e.u);
+        });
+      }
+
+      // Dibujar Vértices (Nodos)
+      state.nodes.forEach((node, idx) => {
+        const isHovered = state.hoveredNode && state.hoveredNode.id === node.id;
+        const isNeighbor = neighborIds.has(node.id);
+        const isSelected = state.selectedNodeForEdge === node.id;
+        const degree = analysis.deg[idx] || 0;
+        const isOdd = degree % 2 !== 0;
+
+        // Color semántico del nodo
+        let fill = '#4f46e5'; // Indigo (Par / V1)
+        if (node.partition === 2 || (analysis.isBipartite && analysis.bipartiteColors[idx] === 2 && state.activePreset === 'bipartite')) {
+          fill = '#10b981'; // Esmeralda (V2)
+        } else if (!state.directed && isOdd && degree > 0) {
+          fill = '#f59e0b'; // Ámbar (Grado impar - clave para Euler)
+        }
+
+        const radius = isHovered || isSelected ? 22 : 19;
+
+        // Halo exterior si está activo o es adyacente
+        if (isHovered || isNeighbor || isSelected) {
+          ctx.beginPath();
+          ctx.arc(node.x, node.y, radius + 6, 0, Math.PI * 2);
+          ctx.fillStyle = isSelected
+            ? 'rgba(56, 189, 248, 0.3)'
+            : isHovered
+            ? 'rgba(99, 102, 241, 0.35)'
+            : 'rgba(56, 189, 248, 0.18)';
+          ctx.fill();
+        }
+
+        // Círculo principal
+        ctx.beginPath();
+        ctx.arc(node.x, node.y, radius, 0, Math.PI * 2);
+        ctx.fillStyle = fill;
+        ctx.fill();
+        ctx.lineWidth = isSelected ? 3 : 2;
+        ctx.strokeStyle = isHovered || isSelected ? '#ffffff' : '#0f172a';
+        ctx.stroke();
+
+        // Etiqueta del vértice (v1, v2...)
+        ctx.fillStyle = '#ffffff';
+        ctx.font = 'bold 12px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(node.label, node.x, node.y);
+
+        // Etiqueta de Valencia / Grado
+        if (state.showDegrees) {
+          const degText = state.directed
+            ? `⁻${analysis.inDeg[idx]} / ⁺${analysis.outDeg[idx]}`
+            : `deg=${degree}`;
+          ctx.font = '600 10px "JetBrains Mono", monospace';
+          const textW = ctx.measureText(degText).width + 8;
+          ctx.fillStyle = 'rgba(15, 23, 42, 0.88)';
+          roundRect(ctx, node.x - textW / 2, node.y + radius + 4, textW, 16, 5);
+          ctx.fill();
+          ctx.strokeStyle = 'rgba(71, 85, 105, 0.6)';
+          ctx.lineWidth = 1;
+          ctx.stroke();
+
+          ctx.fillStyle = isOdd && !state.directed ? '#fcd34d' : '#cbd5e1';
+          ctx.fillText(degText, node.x, node.y + radius + 12);
+        }
+      });
+    }
+
+    function drawArrowHead(x, y, angle, color) {
+      const headLen = 10;
+      ctx.save();
+      ctx.fillStyle = color;
+      ctx.beginPath();
+      ctx.moveTo(x, y);
+      ctx.lineTo(x - headLen * Math.cos(angle - Math.PI / 6), y - headLen * Math.sin(angle - Math.PI / 6));
+      ctx.lineTo(x - headLen * Math.cos(angle + Math.PI / 6), y - headLen * Math.sin(angle + Math.PI / 6));
+      ctx.closePath();
+      ctx.fill();
+      ctx.restore();
+    }
+
+    function roundRect(ctx, x, y, w, h, r) {
+      ctx.beginPath();
+      ctx.moveTo(x + r, y);
+      ctx.arcTo(x + w, y, x + w, y + h, r);
+      ctx.arcTo(x + w, y + h, x, y + h, r);
+      ctx.arcTo(x, y + h, x, y, r);
+      ctx.arcTo(x, y, x + w, y, r);
+      ctx.closePath();
+    }
+
+    // =========================================================================
+    // 8. ACTUALIZACIÓN DE PANELES (MÉTRICAS, PROPIEDADES Y MATRICES A / M)
+    // =========================================================================
+    function analyzeAndRenderAll() {
+      const analysis = analyzeGraph();
+      drawGraph(analysis);
+
+      // Estadísticas básicas
+      document.getElementById('stat-v').textContent = analysis.n;
+      document.getElementById('stat-e').textContent = analysis.m;
+      document.getElementById('stat-degsum').textContent = analysis.degSum;
+      document.getElementById('stat-handshake').textContent = `${analysis.degSum} = 2(${analysis.m}) ✔`;
+
+      // Insignias de propiedades matemáticas
+      const badges = [
+        {
+          label: 'Grafo Simple',
+          value: analysis.isSimple ? 'Sí (sin bucles/paralelas)' : 'No (Multigrafo)',
+          ok: analysis.isSimple,
+        },
+        {
+          label: 'Conectividad',
+          value: analysis.n === 0 ? 'Vacío' : analysis.isConnected ? 'Conexo (1 comp.)' : `Disconexo (${analysis.components} comp.)`,
+          ok: analysis.isConnected,
+        },
+        {
+          label: 'Bipartido',
+          value: analysis.isBipartite ? 'Sí (2-coloreable)' : 'No (ciclo impar/bucle)',
+          ok: analysis.isBipartite,
+        },
+        {
+          label: 'Grafo Completo',
+          value: analysis.isComplete ? `Sí (K_${analysis.n})` : 'No',
+          ok: analysis.isComplete,
+        },
+        {
+          label: 'Trayectoria Euler',
+          value: state.directed ? 'N/A (Digrafo)' : analysis.eulerStatus,
+          ok: analysis.eulerStatus !== 'No Euleriano',
+          fullWidth: true,
+        },
+      ];
+
+      const propBadgesEl = document.getElementById('prop-badges');
+      propBadgesEl.innerHTML = badges
+        .map(
+          (b) => `
+        <div class="${b.fullWidth ? 'col-span-2' : ''} bg-slate-950 border ${
+            b.ok ? 'border-emerald-500/30' : 'border-slate-800'
+          } rounded-xl px-2.5 py-2 flex items-center justify-between gap-2">
+          <span class="text-slate-400 text-[11px]">${b.label}:</span>
+          <span class="font-semibold text-[11px] ${b.ok ? 'text-emerald-400' : 'text-slate-300'}">${b.value}</span>
+        </div>`
+        )
+        .join('');
+
+      renderMatrices(analysis);
+    }
+
+    function renderMatrices(analysis) {
+      const container = document.getElementById('matrix-container');
+      const caption = document.getElementById('matrix-caption');
+      const n = analysis.n;
+      const m = analysis.m;
+
+      if (n === 0) {
+        container.innerHTML = `<span class="text-xs text-slate-500">Agrega vértices al lienzo para generar las matrices.</span>`;
+        return;
+      }
+
+      if (state.matrixTab === 'adj') {
+        caption.textContent = `Matriz de Adyacencia A (${n}×${n}): número de aristas entre vᵢ y vⱼ.`;
+        const A = Array.from({ length: n }, () => new Array(n).fill(0));
+        state.edges.forEach((e) => {
+          const ui = analysis.idToIndex.get(e.u);
+          const vi = analysis.idToIndex.get(e.v);
+          if (ui === undefined || vi === undefined) return;
+          if (state.directed) {
+            A[ui][vi] += 1;
+          } else {
+            A[ui][vi] += 1;
+            if (ui !== vi) A[vi][ui] += 1;
+          }
+        });
+
+        let html = `<table class="font-mono text-xs border-collapse text-center"><thead><tr><th class="p-1.5 text-slate-500">A</th>`;
+        state.nodes.forEach((node) => {
+          html += `<th class="p-1.5 text-indigo-400 font-semibold">${node.label}</th>`;
+        });
+        html += `</tr></thead><tbody>`;
+
+        A.forEach((row, i) => {
+          html += `<tr><th class="p-1.5 text-indigo-400 font-semibold">${state.nodes[i].label}</th>`;
+          row.forEach((val) => {
+            const active = val > 0;
+            html += `<td class="matrix-cell w-7 h-7 border border-slate-800 rounded ${
+              active ? 'bg-indigo-500/25 text-cyan-300 font-bold' : 'text-slate-600'
+            }">${val}</td>`;
+          });
+          html += `</tr>`;
+        });
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+      } else {
+        // Matriz de Incidencia M (n x m)
+        if (m === 0) {
+          caption.textContent = `Matriz de Incidencia M (${n}×0): aún no hay aristas en el grafo.`;
+          container.innerHTML = `<span class="text-xs text-slate-500">Agrega aristas para visualizar las columnas de incidencia.</span>`;
+          return;
+        }
+        caption.textContent = state.directed
+          ? `Matriz de Incidencia M (${n}×${m}): -1 sale de vᵢ, +1 entra en vᵢ.`
+          : `Matriz de Incidencia M (${n}×${m}): 1 si eⱼ incide en vᵢ (2 si es bucle).`;
+
+        const M = Array.from({ length: n }, () => new Array(m).fill(0));
+        state.edges.forEach((e, j) => {
+          const ui = analysis.idToIndex.get(e.u);
+          const vi = analysis.idToIndex.get(e.v);
+          if (ui === undefined || vi === undefined) return;
+          if (state.directed) {
+            if (ui !== vi) {
+              M[ui][j] = -1;
+              M[vi][j] = 1;
+            }
+          } else {
+            if (ui === vi) M[ui][j] = 2;
+            else {
+              M[ui][j] = 1;
+              M[vi][j] = 1;
+            }
+          }
+        });
+
+        let html = `<table class="font-mono text-xs border-collapse text-center"><thead><tr><th class="p-1.5 text-slate-500">M</th>`;
+        state.edges.forEach((_, j) => {
+          html += `<th class="p-1.5 text-emerald-400 font-semibold">e${j + 1}</th>`;
+        });
+        html += `</tr></thead><tbody>`;
+
+        M.forEach((row, i) => {
+          html += `<tr><th class="p-1.5 text-indigo-400 font-semibold">${state.nodes[i].label}</th>`;
+          row.forEach((val) => {
+            const cls =
+              val > 0
+                ? 'bg-emerald-500/25 text-emerald-300 font-bold'
+                : val < 0
+                ? 'bg-rose-500/25 text-rose-300 font-bold'
+                : 'text-slate-600';
+            html += `<td class="matrix-cell w-7 h-7 border border-slate-800 ${cls}">${val > 0 && state.directed ? '+1' : val}</td>`;
+          });
+          html += `</tr>`;
+        });
+        html += `</tbody></table>`;
+        container.innerHTML = html;
+      }
+    }
+
+    function updateEducationalCard(presetId) {
+      const p = PRESETS.find((item) => item.id === presetId) || PRESETS[0];
+      document.getElementById('edu-title').textContent = p.title;
+      document.getElementById('edu-desc').textContent = p.desc;
+      document.getElementById('edu-formula').textContent = p.formula;
+    }
+
+    function renderPresetButtons() {
+      presetListEl.innerHTML = PRESETS.map((p) => {
+        const active = state.activePreset === p.id;
+        return `
+          <button onclick="loadPreset('${p.id}')" class="text-left px-3 py-2 rounded-xl border transition flex items-center justify-between gap-2 ${
+          active
+            ? 'bg-indigo-600/20 border-indigo-500 text-white shadow-sm'
+            : 'bg-slate-950/60 border-slate-800 text-slate-300 hover:bg-slate-800'
+        }">
+            <span class="text-xs font-semibold truncate">${p.name}</span>
+            <span class="text-[10px] font-mono px-1.5 py-0.5 rounded bg-slate-900 text-slate-400 border border-slate-800 shrink-0">${p.badge}</span>
+          </button>`;
+      }).join('');
+    }
+
+    // =========================================================================
+    // 9. EVENTOS DE INTERACCIÓN CON EL CANVAS (MOUSE Y TÁCTIL)
+    // =========================================================================
+    function getPointerCoords(evt) {
+      const rect = canvas.getBoundingClientRect();
+      const clientX = evt.touches ? evt.touches[0].clientX : evt.clientX;
+      const clientY = evt.touches ? evt.touches[0].clientY : evt.clientY;
+      return {
+        x: clientX - rect.left,
+        y: clientY - rect.top,
+      };
+    }
+
+    function findNodeAt(x, y) {
+      for (let i = state.nodes.length - 1; i >= 0; i--) {
+        const n = state.nodes[i];
+        if (Math.hypot(n.x - x, n.y - y) <= 23) return n;
+      }
+      return null;
+    }
+
+    function findEdgeAt(x, y) {
+      for (let i = state.edges.length - 1; i >= 0; i--) {
+        const e = state.edges[i];
+        const u = state.nodes.find((n) => n.id === e.u);
+        const v = state.nodes.find((n) => n.id === e.v);
+        if (!u || !v) continue;
+
+        if (u.id === v.id) {
+          if (Math.hypot(u.x - x, u.y - 24 - y) <= 22) return e;
+        } else {
+          // Distancia punto a segmento
+          const l2 = (v.x - u.x) ** 2 + (v.y - u.y) ** 2;
+          if (l2 === 0) continue;
+          let t = ((x - u.x) * (v.x - u.x) + (y - u.y) * (v.y - u.y)) / l2;
+          t = Math.max(0, Math.min(1, t));
+          const projX = u.x + t * (v.x - u.x);
+          const projY = u.y + t * (v.y - u.y);
+          if (Math.hypot(x - projX, y - projY) <= 10) return e;
+        }
+      }
+      return null;
+    }
+
+    function handlePointerDown(evt) {
+      const pos = getPointerCoords(evt);
+      state.pointerPos = pos;
+      const hitNode = findNodeAt(pos.x, pos.y);
+
+      if (state.mode === 'move') {
+        if (hitNode) {
+          state.draggingNode = hitNode;
+        }
+      } else if (state.mode === 'addNode') {
+        if (!hitNode) {
+          addNode(pos.x, pos.y);
+          analyzeAndRenderAll();
+        }
+      } else if (state.mode === 'addEdge') {
+        if (hitNode) {
+          if (!state.selectedNodeForEdge) {
+            state.selectedNodeForEdge = hitNode.id;
+            drawGraph();
+          } else {
+            // Permite conectar dos nodos o hacer clic de nuevo en el mismo para crear un bucle
+            addEdge(state.selectedNodeForEdge, hitNode.id);
+            state.selectedNodeForEdge = null;
+            analyzeAndRenderAll();
+          }
+        } else {
+          state.selectedNodeForEdge = null;
+          drawGraph();
+        }
+      } else if (state.mode === 'delete') {
+        if (hitNode) {
+          state.nodes = state.nodes.filter((n) => n.id !== hitNode.id);
+          state.edges = state.edges.filter((e) => e.u !== hitNode.id && e.v !== hitNode.id);
+          analyzeAndRenderAll();
+        } else {
+          const hitEdge = findEdgeAt(pos.x, pos.y);
+          if (hitEdge) {
+            state.edges = state.edges.filter((e) => e.id !== hitEdge.id);
+            analyzeAndRenderAll();
+          }
+        }
+      }
+    }
+
+    function handlePointerMove(evt) {
+      const pos = getPointerCoords(evt);
+      state.pointerPos = pos;
+
+      if (state.draggingNode) {
+        evt.preventDefault();
+        const width = canvas.width / (window.devicePixelRatio || 1);
+        const height = canvas.height / (window.devicePixelRatio || 1);
+        state.draggingNode.x = Math.max(24, Math.min(width - 24, pos.x));
+        state.draggingNode.y = Math.max(24, Math.min(height - 34, pos.y));
+        drawGraph();
+        return;
+      }
+
+      const hitNode = findNodeAt(pos.x, pos.y);
+      if (hitNode !== state.hoveredNode) {
+        state.hoveredNode = hitNode;
+        const statusEl = document.getElementById('hover-status');
+        if (hitNode) {
+          const analysis = analyzeGraph();
+          const idx = analysis.idToIndex.get(hitNode.id);
+          statusEl.textContent = state.directed
+            ? `${hitNode.label}: deg⁻=${analysis.inDeg[idx]}, deg⁺=${analysis.outDeg[idx]}`
+            : `${hitNode.label}: valencia deg = ${analysis.deg[idx]}`;
+        } else {
+          statusEl.textContent = 'Nodo: ninguno';
+        }
+        drawGraph();
+      } else if (state.mode === 'addEdge' && state.selectedNodeForEdge) {
+        drawGraph();
+      }
+    }
+
+    function handlePointerUp() {
+      state.draggingNode = null;
+    }
+
+    canvas.addEventListener('mousedown', handlePointerDown);
+    canvas.addEventListener('mousemove', handlePointerMove);
+    window.addEventListener('mouseup', handlePointerUp);
+
+    canvas.addEventListener('touchstart', handlePointerDown, { passive: false });
+    canvas.addEventListener('touchmove', handlePointerMove, { passive: false });
+    window.addEventListener('touchend', handlePointerUp);
+
+    // =========================================================================
+    // 10. EVENTOS DE CONTROLES UI
+    // =========================================================================
+    document.querySelectorAll('.tool-btn').forEach((btn) => {
+      btn.addEventListener('click', () => {
+        document.querySelectorAll('.tool-btn').forEach((b) => {
+          b.classList.remove('bg-indigo-600', 'text-white', 'shadow');
+          b.classList.add('bg-slate-800', 'text-slate-300');
+        });
+        btn.classList.remove('bg-slate-800', 'text-slate-300');
+        btn.classList.add('bg-indigo-600', 'text-white', 'shadow');
+        state.mode = btn.dataset.mode;
+        state.selectedNodeForEdge = null;
+
+        const hintMap = {
+          move: '💡 Arrastra los nodos o pasa el cursor encima para inspeccionar vecindad.',
+          addNode: '➕ Haz clic en cualquier espacio vacío del lienzo para crear un vértice.',
+          addEdge: '🔗 Haz clic en el vértice origen y luego en el destino (o el mismo para bucle).',
+          delete: '🗑️ Haz clic sobre cualquier vértice o arista para eliminarlo.',
+        };
+        document.querySelector('#canvas-hint span').textContent = hintMap[state.mode];
+        drawGraph();
+      });
+    });
+
+    document.getElementById('btn-clear').addEventListener('click', () => {
+      resetGraphBase(state.directed);
+      analyzeAndRenderAll();
+    });
+
+    chkDirected.addEventListener('change', (e) => {
+      state.directed = e.target.checked;
+      analyzeAndRenderAll();
+    });
+
+    chkDegrees.addEventListener('change', (e) => {
+      state.showDegrees = e.target.checked;
+      drawGraph();
+    });
+
+    btnComplement.addEventListener('click', toggleComplement);
+
+    // Sliders K_n y K_{m,n}
+    document.getElementById('slider-kn').addEventListener('input', (e) => {
+      state.kn = parseInt(e.target.value, 10);
+      document.getElementById('val-kn').textContent = state.kn;
+      loadPreset('complete');
+    });
+
+    document.getElementById('slider-km').addEventListener('input', (e) => {
+      state.km = parseInt(e.target.value, 10);
+      document.getElementById('val-km').textContent = state.km;
+      loadPreset('bipartite');
+    });
+
+    document.getElementById('slider-kn2').addEventListener('input', (e) => {
+      state.kn2 = parseInt(e.target.value, 10);
+      document.getElementById('val-kn2').textContent = state.kn2;
+      loadPreset('bipartite');
+    });
+
+    // Pestañas Matriz A / Matriz M
+    document.getElementById('tab-adj').addEventListener('click', () => {
+      state.matrixTab = 'adj';
+      document.getElementById('tab-adj').className = 'matrix-tab px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-600 text-white';
+      document.getElementById('tab-inc').className = 'matrix-tab px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-white';
+      analyzeAndRenderAll();
+    });
+
+    document.getElementById('tab-inc').addEventListener('click', () => {
+      state.matrixTab = 'inc';
+      document.getElementById('tab-inc').className = 'matrix-tab px-2.5 py-1 rounded-lg text-xs font-semibold bg-indigo-600 text-white';
+      document.getElementById('tab-adj').className = 'matrix-tab px-2.5 py-1 rounded-lg text-xs font-semibold text-slate-400 hover:text-white';
+      analyzeAndRenderAll();
+    });
+
+    window.addEventListener('resize', resizeCanvas);
+
+    // Inicialización al cargar la ventana
+    window.onload = () => {
+      resizeCanvas();
+      loadPreset('simple');
+    };
+  </script>
+</body>
+</html>
