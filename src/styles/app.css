@@ -219,6 +219,21 @@ a {
   text-transform: uppercase;
 }
 
+.brand__home {
+  display: inline-block;
+  margin-bottom: 2px;
+  color: var(--text-faint);
+  font-family: var(--font-mono);
+  font-size: 8px;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  text-decoration: none;
+}
+
+.brand__home:hover {
+  color: var(--white);
+}
+
 .header__controls {
   display: flex;
   flex-wrap: wrap;

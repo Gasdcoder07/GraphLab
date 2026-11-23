@@ -10,6 +10,7 @@ import '@fontsource/jetbrains-mono/latin-700.css';
 import App from './App';
 import './styles/tokens.css';
 import './styles/app.css';
+import './styles/home.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>

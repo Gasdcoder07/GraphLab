@@ -1,11 +1,15 @@
-# GRAFO/LAB
+# DSLAB
 
-Laboratorio interactivo de teoría de grafos reconstruido con **React + TypeScript + Vite** y una interfaz monocroma basada en **dithering shading**.
+Laboratorio interactivo de estructuras de datos y estructuras matemáticas, reconstruido con **React + TypeScript + Vite** y una interfaz monocroma basada en **dithering shading**.
+
+El laboratorio de grafos sigue siendo el módulo activo: **GRAFO/LAB**.
 
 El archivo `main.html` original se conserva en la raíz como referencia.
 
 ## Características
 
+- Home con hero, bento grid, selector de laboratorio y ficha del módulo.
+- Selector de laboratorio con estado `ACTIVO` o `EN DISEÑO` para los módulos previstos.
 - Presets: grafo simple, multigrafo, digrafo, Kₙ, Kₘ,ₙ, grafo disconexo, circuito de Euler y camino de Euler.
 - Edición en canvas: mover, añadir vértices, añadir aristas y bucles, eliminar.
 - Análisis estructural en tiempo real:

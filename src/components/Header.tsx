@@ -25,6 +25,9 @@ export function Header({
       <div className="header__inner">
         <div className="brand">
           <div className="brand__text">
+            <a className="brand__home" href="#/">
+              ← DSLAB
+            </a>
             <h1 className="brand__title">
               GRAFO<span>/</span>LAB
             </h1>

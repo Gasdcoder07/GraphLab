@@ -14,7 +14,12 @@ export type IconName =
   | 'sliders'
   | 'refresh'
   | 'arrow'
-  | 'info';
+  | 'info'
+  | 'github'
+  | 'list'
+  | 'tree'
+  | 'hash'
+  | 'external';
 
 interface IconProps extends Omit<SVGProps<SVGSVGElement>, 'name'> {
   name: IconName;
@@ -132,6 +137,46 @@ export function Icon({ name, size = 16, ...rest }: IconProps) {
         <svg {...common}>
           <circle cx="12" cy="12" r="9" />
           <path d="M12 11v5M12 8h.01" />
+        </svg>
+      );
+    case 'github':
+      return (
+        <svg {...common}>
+          <circle cx="6" cy="5" r="2" />
+          <circle cx="6" cy="19" r="2" />
+          <circle cx="18" cy="9" r="2" />
+          <path d="M6 7v10M18 11v1a5 5 0 0 1-5 5H8" />
+        </svg>
+      );
+    case 'list':
+      return (
+        <svg {...common}>
+          <circle cx="5" cy="12" r="2.4" />
+          <circle cx="12" cy="12" r="2.4" />
+          <circle cx="19" cy="12" r="2.4" />
+          <path d="M7.4 10.6h7.2M7.4 13.4h7.2" />
+        </svg>
+      );
+    case 'tree':
+      return (
+        <svg {...common}>
+          <circle cx="12" cy="5" r="2.4" />
+          <path d="M12 7.4v8M12 10.4 6.5 17M12 10.4l5.5 6.6" />
+          <circle cx="6.5" cy="18.6" r="2.4" />
+          <circle cx="17.5" cy="18.6" r="2.4" />
+        </svg>
+      );
+    case 'hash':
+      return (
+        <svg {...common}>
+          <path d="M8 6v12M16 6v12M6 8h12M6 16h12" />
+        </svg>
+      );
+    case 'external':
+      return (
+        <svg {...common}>
+          <path d="M14 5h5v5M19 5l-8.5 8.5" />
+          <path d="M7 14v5h5" />
         </svg>
       );
     default:
